@@ -1,11 +1,23 @@
 package org.example;
 
-import jakarta.persistence.*;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 
 import java.util.List;
+import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+@DataJpaTest
 public class JPATest {
+
+    @Autowired
+    private BuddyInfoRepository buddyInfoRepository;
+
+    @Autowired
+    private AddressBookRepository addressBookRepository;
+
     @Test
     void buddyInfoPersist() {
         BuddyInfo buddy = new BuddyInfo();
@@ -14,34 +26,21 @@ public class JPATest {
         BuddyInfo buddy1 = new BuddyInfo();
         buddy1.setName("Olivia");
 
-        EntityManagerFactory emf = Persistence.createEntityManagerFactory("address-book-test");
+        // replaces em.persist(...) inside tx.begin()/tx.commit()
+        buddyInfoRepository.save(buddy);
+        buddyInfoRepository.save(buddy1);
 
-        EntityManager em = emf.createEntityManager();
+        // replaces em.createQuery("SELECT p FROM BuddyInfo p").getResultList()
+        List<BuddyInfo> results = (List<BuddyInfo>) buddyInfoRepository.findAll();
 
-        EntityTransaction tx = em.getTransaction();
+        assertEquals(2, results.size());
+        assertNotNull(buddy.getId());
+        assertNotNull(buddy1.getId());
 
-        tx.begin();
-
-        em.persist(buddy);
-        em.persist(buddy1);
-
-        tx.commit();
-
-        Query q = em.createQuery("SELECT p FROM BuddyInfo p");
-
-        @SuppressWarnings("unchecked")
-        List<BuddyInfo> results = q.getResultList();
-
-        System.out.println("List of products\n----------------");
-
+        System.out.println("List of buddies\n----------------");
         for (BuddyInfo p : results) {
-
             System.out.println(p.getName() + " (id=" + p.getId() + ")");
         }
-
-        em.close();
-
-        emf.close();
     }
 
     @Test
@@ -50,35 +49,36 @@ public class JPATest {
         BuddyInfo buddy = new BuddyInfo("John", "613-555-1234");
         BuddyInfo buddy1 = new BuddyInfo("Sarah", "623-666-5678");
 
-
+        // save the buddies, then the book that refers to them
+        buddyInfoRepository.save(buddy);
+        buddyInfoRepository.save(buddy1);
         addressBook.addBuddy(buddy);
+        addressBook.addBuddy(buddy1);
+        addressBookRepository.save(addressBook);
 
-        EntityManagerFactory emf = Persistence.createEntityManagerFactory("address-book-test");
+        // replaces em.createQuery("SELECT p FROM AddressBook p").getResultList()
+        List<AddressBook> results = (List<AddressBook>) addressBookRepository.findAll();
 
-        EntityManager em = emf.createEntityManager();
+        assertEquals(1, results.size());
+        Optional<AddressBook> found = addressBookRepository.findById(addressBook.getId());
+        assertTrue(found.isPresent());
+        assertEquals(2, found.get().getSize());
+        assertEquals("[John - 613-555-1234, Sarah - 623-666-5678]", found.get().toString());
 
-        EntityTransaction tx = em.getTransaction();
-
-        tx.begin();
-
-        em.persist(buddy);
-        em.persist(buddy1);
-
-        tx.commit();
-
-        Query q = em.createQuery("SELECT p FROM AddressBook p");
-
-        @SuppressWarnings("unchecked")
-        List<AddressBook> results = q.getResultList();
-
-        System.out.println("List of products\n----------------");
-
+        System.out.println("List of address books\n----------------");
         for (AddressBook p : results) {
             System.out.println(p.getBuddies() + " (id=" + p.getId() + ")");
         }
+    }
 
-        em.close();
+    @Test
+    void findBuddyByName() {
+        buddyInfoRepository.save(new BuddyInfo("John", "613-555-1234"));
+        buddyInfoRepository.save(new BuddyInfo("Sarah", "623-666-5678"));
 
-        emf.close();
+        List<BuddyInfo> found = buddyInfoRepository.findByName("Sarah");
+
+        assertEquals(1, found.size());
+        assertEquals("623-666-5678", found.get(0).getPhoneNumber());
     }
 }

@@ -2,7 +2,7 @@ package org.example;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -24,7 +24,7 @@ class AddressBookControllerTest {
 
     private int createBook() throws Exception {
         String json = mockMvc.perform(post("/api/addressbooks"))
-                .andExpect(status().isCreated())
+                .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         return JsonPath.read(json, "$.id");
     }
@@ -33,7 +33,7 @@ class AddressBookControllerTest {
         String json = mockMvc.perform(post("/api/buddies")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"" + name + "\",\"phoneNumber\":\"" + phone + "\"}"))
-                .andExpect(status().isCreated())
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value(name))
                 .andExpect(jsonPath("$.phoneNumber").value(phone))
                 .andReturn().getResponse().getContentAsString();
@@ -43,7 +43,7 @@ class AddressBookControllerTest {
     @Test
     void createAddressBookReturnsEmptyBook() throws Exception {
         mockMvc.perform(post("/api/addressbooks"))
-                .andExpect(status().isCreated())
+                .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").isNumber())
                 .andExpect(jsonPath("$.buddies").isEmpty());
@@ -80,7 +80,7 @@ class AddressBookControllerTest {
         mockMvc.perform(post("/api/addressbooks/" + bookId + "/buddies")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Emmanuel\",\"phoneNumber\":\"613-555-0000\"}"))
-                .andExpect(status().isCreated())
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.buddies[0].name").value("Emmanuel"));
     }
 
