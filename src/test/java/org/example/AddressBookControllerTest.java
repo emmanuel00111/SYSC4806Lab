@@ -1,5 +1,4 @@
 package org.example;
-/**
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -127,4 +126,3 @@ class AddressBookControllerTest {
                 .andExpect(content().string(containsString("Address Book #" + bookId)));
     }
 }
-**/
